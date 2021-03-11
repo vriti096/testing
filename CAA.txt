@@ -1,0 +1,140 @@
+/* CATIPLMComponent--> 
+From this interface you can reach identification information like:
+
+the database identification object, a component implementing CATIAdpPLMIndentificator 
+the PLM type object, a component implementing CATIAdpType. */
+Bag : used for effectively managing the lifecycle of PLM component.
+
+There is also GetPLMComponentsInSession method of the CATPLMComponentInterfacesServices class.
+
+Red dot-> Represents scope link between manufacturing assembly and product
+Scope link defines a contract between manufactured item and product. It delimits a subset of product structure that can be implemented by 
+the manufactured item.
+Blue dot-> Represents scope link between general system and manufacturing assembly.
+System->Assembly scope link delimits a subset of manufacturing assembly structure that can be accessed by the system.
+(Operations required to completely realize a manufacturing assembly structure.)
+Green dot-> Signifies scope link between resource and general system.
+Implement link exists between general operation and its corresponding provided part.
+
+
+Equipment Allocation App: (Here, we define resource->System scope)
+creating resource structure, scope link between resource and system, assign operations to resources using assignment manager and 
+simulation of system and resources.
+
+
+IUnknown Interface provides these methods as pure virtual functions.
+CATBaseUnknown class implements these methods provided by IUnknown interface.
+[ Query Interface - returns a pointer to an interface from another pointer to an interface.
+				used for navigation from one interface to another.
+AddRef() - adds a reference to the counter for the interface.
+Release() - removes the reference from the counter.	]
+
+Components : atoms that build an application, non-modifiable, only exposes the interface.
+CAA Component : object exposing only interfaces.
+HRESULT __stdcall QueryInterface(const IID & iid, void ** ppv);
+If HRESULT returns S_OK, it means the query is successfully executed.
+QueryInterface is reflexive, symmetric, and transitive.
+QueryInterface is shared by all the interfaces.
+Whenever we get pointer to an interface, we need to increment the reference count.
+
+
+// Smart Interface pointer - CATIXX_var spIXXOnCATCmp(pCATBaseUnknownOnCATCmp);
+if (NULL_var != spIXXOnCATCmp) spIXXOnCATCmp->MXX1();
+The CATIXX_var class instance is used to create a reference to a CATIXX instance from pIUnknownOnCATCmp by calling QueryInterface. 
+Smart pointer does not require you to manage reference counting, it manages this by itself.As soon as the smart interface pointer goes out of scope,
+ it is automatically released. 
+
+// Create a CATCmp instance
+  IUnknown * pIUnknownOnCATCmp = NULL;
+  rc = ::CATInstantiateComponent("CATCmp", IID_IUnknown, (void **) &pIUnknownOnCATCmp);
+  if (SUCCEEDED(rc) && NULL != pIUnknownOnCATCmp)
+  {
+    // Initialize to NULL the pointer to the requested interface
+    CATIXX * pIXXOnCATCmp = NULL;
+
+**any pointer to any interface can be seen as a pointer to IUnknown or to CATBaseUnknown, since all the interfaces  are derived from this.
+for a given component, the pointer to IUnknown or to CATBaseUnknown is constant, that is the same value is returned by successive QueryInterface calls
+ to the same component for the IUnknown interface, or for the CATBaseUnknown interface. Thus, it works as universal handler.
+ you can also manage reference counting with a pointer to IUnknown or to CATBaseUnknown. **
+
+// Interface pointer : While using interface pointers, you need to call AddRef() except in case of QueryInterface().Also release it when used.
+
+CAAAdpBasicBatch : creates a PLM session and closes the same.
+PLM Object has an identifier that identifies the object uniquely in the database. [uses CATIPLMIdentificator interface ]
+
+CATAdpOpener::CompleteAndOpen(CATIAdpPLMIdentificator* ipCompIdentificator,IID&,void** opCompSession)
+
+PLM Component : A PLM object in session. It is implemented using CATIPLMComponent Interface.
+
+Logical lifecycle of an object is managed by a BAG object.
+With PLM reference, you get more than one PLM component.Can also get the complete root structure.
+
+Knowledge Type : represents one PLM class of an object modeler component.
+VPMReference is the name of one PLM Class of the PRODUCT modeler.
+
+To retrieve the PLM Attributes associated with a Knowledge type there are two ways:
+
+"Knowledge" way : Using the CATIAttributesDescription interface implemented by the knowledge type [Fig.1].  An interface valid for PLM context or not.
+"PLM" way : Using the CATCkePLMNavCustoAccessPublicServices or CATCkePLMNavPublicServices classes. Dedicated API to manage knowledge type associated 
+with a PLM class.
+
+CATICkeObject interface : AttrReadandWriteservices
+
+Knowledge view : It is an Object Modeler object implementing the CATIType interface [Fig.1]
+Component view : it is an Object Modeler object implementing the CATIAdpType interface
+In both cases it represents the PLM Class type [1].
+
+Only authorized people can access secure commands.
+
+CAAAdpQueryPLMComponent ( API)
+I/p : Create an attribute set object with attribute/value input pairs.
+    Retrieve the CATIType Interface on this object.
+	Steps :
+	1.Create an input session and connect to the input repository. (Creating a basic PLM batch)
+	2. Retrieve the CATIType interface : by using method RetrieveKnowledgeType of class CATCkePLMNavPublicServices which takes PLMType 
+	as an I/p and returns a pointer to CATIType.
+	3. Create an AttributeSet for the query and add attribute-value pairs to it.
+	4.Query the database for components with AttributeSet.
+	 //In this way, only info of PLM objects is retreived not the actual components.
+	 If the components are to be loaded/opened in the current session,  we'll have
+	 to seek their Identification  from the CATAdpQueryResult object and explicitly load them in the  session.
+	 Identifying set attributes are only associated with PLM references not instances & rep. reference.
+	 The QueryResult object allows us to retrieve a session object implementing the 
+	 CATIAdpPLMIdentificator Interface  which has information to uniquely identify the PLM Object in the database.//
+	5.	If the query is successfull, retrieve the identificator of PLM object by using an iterator on the output component set.
+	6. From this identificator, unique key of PLM object can be retrieved.
+	7. Query the database for component with unique key.
+	8. Displaying the attribute name/value for component returned by the query.
+	9. Close the session.
+	
+CAAAdpQueryOpen (API)
+Steps :
+1. Parsing the input arguments.
+2.	Finding the components with its identifying attributes ( Use global method RetrieveIDOfUniquePLMObject )
+3. Opening the component.
+ CATOmbLifeCycleRootsBag Bag;
+  CATAdpOpener opener(Bag);
+
+  CATIPLMComponent *piCompOnPLMId = NULL;
+  hr = opener.CompleteAndOpen(opiIDComp,IID_CATIPLMComponent,(void**) & piCompOnPLMId);
+  The CompleteAndOpen method does the open ( and expand for PLM Reference), and adds the newly opened root objet in the input bag.
+	
+	CAARetrieveIDofUniquePLMObject : global function used to retrieve identificator of the PLM reference.
+	Modification of 
+
+
+ 
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+

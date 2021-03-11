@@ -1,0 +1,102 @@
+function setVariables(selectedNode) 
+{ 
+//selectedNode is for identifying the row after applying parentNode twice on it (document.activeElement = checkbox)  
+
+      setid = selectedNode; //for addRow
+
+      xyz = selectedNode; //for auto populate
+
+      uncheckRows(selectedNode);
+
+      selectedCheckboxes.push(selectedNode);
+
+      if(selectedNode.checked) {
+        fetchParentId(selectedNode);
+      }
+
+    }
+
+    function fetchParentId(selectedNode) {
+       currentParentID = $(selectedNode).parent().parent().find('[name = "ID"]').val();
+      }
+// onsaveValidateData : return formJSON
+
+function formJSON() {
+      var baseIndex;
+      var x = $('.newData');
+      var existingRows = $('.Items');
+      for(let j=0; j<existingRows.length; j++){
+          if(existingRows[j].checked){
+              baseIndex = j+1;
+              break;
+          }
+      }
+      var mainList = [];
+      var updateList = [];
+      var allRows = $('.str');
+      for(let k=0; k < allRows.length; k++) {
+        if (allRows.eq(k).find('.flag') && allRows.eq(k).find('.flag').attr('update') ==
+          1) { //check flag for edit operation
+          updateList.push(reducedRowJSON(k))
+        }
+
+      }
+      for(let i = 0; i<x.length; i++){
+          mainList.push(reducedRowJSON(baseIndex+i));
+      }
+      return ({
+        "addList": mainList,
+        "updateList": updateList,
+        "url": String(pqr)
+      });
+    }
+
+
+function addRow2() {
+      $('#Delete').attr('id', 'DeleteOff').attr('disabled', true);
+      var checks = document.getElementsByClassName('existingRows');
+      for (let i = 0; i < checks.length; i++) {
+        if (checks[i].checked == true) {
+          var node = checks[i].parentNode.parentNode; //tr 
+          //$(node).find("input[name='Level']").val(1);
+          $(node).find("[name='Flag']").val(2);
+          node.insertAdjacentHTML('afterEnd', node.innerHTML);
+          var y = node.nextElementSibling;
+          y.classList = ['str newData'];
+          $(y).find("input[name='Level']").attr('value', Number.parseInt($(node).find("input[name='Level']").val()) +
+            1)
+            
+          console.log($(y).find("input[name='Level']").val());
+          y.children[0].insertAdjacentHTML('beforeEnd',
+            '<span class="glyphicon" style="color:red; margin:5px;">&#xe088;</span>')
+          for (let j = 1; j < y.children.length; j++) {
+            if ($(y).find('input, select').eq(j).attr('fieldEnabled') == 0) {
+              y.children[1].lastElementChild.style.border = 'grey 1px solid';
+              continue;
+            }
+            try {
+              y.children[0].classList.remove('icon-class'); //remove '+' sign
+              y.children[1].lastElementChild.value = '';
+              y.children[1].lastElementChild.disabled = true;
+              y.children[j].lastElementChild.disabled = false;
+              y.children[j].lastElementChild.style.border = 'grey 1px solid';
+              y.children[j].lastElementChild.style.borderRadius = '4px';
+              $(y).find("td[name ='Flag']").attr('update', '0');
+              
+            } catch (e) {
+              console.log("Flag td has no value ");
+            }
+            y.children[1].firstElementChild.classList = ['Items dummyClass existingRows'];
+            $(y).find("input[name = 'ID']").attr('value', Math.floor(Math.random() * 100000));
+            $(y).find("[name='ParentID']").attr('value', currentParentID);
+          }
+
+        }
+      }
+
+      action = 1;
+      
+    }
+    
+         
+    
