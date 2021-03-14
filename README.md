@@ -1,2 +1,3 @@
 # testing
-A repository created for testing purpose.
+A repository created for demo purpose
+
